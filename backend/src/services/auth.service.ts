@@ -3,14 +3,19 @@ import { prisma } from "../config/prisma";
 import { redis } from "../config/redis";
 import { hashPassword, verifyPassword } from "../utils/password";
 import { addDays } from "../utils/time";
+import { Role } from "../generated/prisma";
 
 const SESSION_EXPIRATION_TIME = 60 * 60 * 24; // 1 day
 
-export async function register(email: string, password: string) {
+export async function register(email: string, password: string, role?: Role) {
   const normalizedEmail = email.toLowerCase();
   const hashedPassword = await hashPassword(password);
   const user = await prisma.user.create({
-    data: { email: normalizedEmail, password: hashedPassword },
+    data: { 
+      email: normalizedEmail, 
+      password: hashedPassword, 
+      ...(role && { role })
+    },
     select: { id: true, email: true, role: true },
   });
   return user;

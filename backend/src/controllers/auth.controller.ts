@@ -7,13 +7,13 @@ import * as authService from "../services/auth.service";
 
 export async function register(req: Request, res: Response) {
     try {
-        const { email, password } = req.body;
+        const { email, password, role } = req.body;
 
         if (!email || !password) { 
             return res.status(400).json({error: "Email and password are required"})    
         }
 
-        const user = await authService.register(email, password);
+        const user = await authService.register(email, password, role);
         return res.status(201).json(user);
 
     } catch (err: any) {
