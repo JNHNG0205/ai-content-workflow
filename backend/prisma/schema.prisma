@@ -43,16 +43,17 @@ enum Role {
 }
 
 model Content {
-  id         String   @id @default(cuid())
-  title      String
-  body       String
-  status     Status   @default(DRAFT)
-  author     User     @relation("AuthorRelation", fields: [authorId], references: [id])
-  authorId   String 
-  reviewer   User?    @relation("ReviewerRelation", fields: [reviewerId], references: [id])
-  reviewerId String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id              String   @id @default(cuid())
+  title           String
+  body            String
+  status          Status   @default(DRAFT)
+  author          User     @relation("AuthorRelation", fields: [authorId], references: [id])
+  authorId        String 
+  reviewer        User?    @relation("ReviewerRelation", fields: [reviewerId], references: [id])
+  reviewerId      String?
+  rejectionComment String? // Comment from reviewer when rejecting content
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 enum Status {

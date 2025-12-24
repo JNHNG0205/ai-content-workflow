@@ -14,6 +14,20 @@ export async function getPendingReviews(req: Request, res: Response) {
     }
 }
 
+export async function reviewContent(req: Request, res: Response) {
+    try {
+        const {contentId} = req.params;
+        const reviewerId = req.user?.id;
+        if (!reviewerId) {
+            return res.status(401).json({error: "Unauthorized"});
+        }
+        const result = await reviewService.reviewContent(contentId, reviewerId);
+        return res.status(200).json(result);
+    } catch (err: any) {
+        return res.status(500).json({error: "Internal server error"});
+    }
+}
+
 export async function approveContent(req: Request, res: Response) {
     try {
         const  {contentId} = req.params;
@@ -31,11 +45,25 @@ export async function approveContent(req: Request, res: Response) {
 export async function rejectContent(req: Request, res: Response) {
     try {
         const {contentId} = req.params;
+        const {comment} = req.body;
         const reviewerId = req.user?.id;
         if (!reviewerId) {
             return res.status(401).json({error: "Unauthorized"});
         }
-        const result = await reviewService.rejectContent(contentId, reviewerId);
+        const result = await reviewService.rejectContent(contentId, reviewerId, comment);
+        return res.status(200).json(result);
+    } catch (err: any) {
+        return res.status(500).json({error: "Internal server error"});
+    }
+}
+
+export async function getReviewedContent(req: Request, res: Response) {
+    try {
+        const reviewerId = req.user?.id;
+        if (!reviewerId) {
+            return res.status(401).json({error: "Unauthorized"});
+        }
+        const result = await reviewService.getReviewedContent(reviewerId);
         return res.status(200).json(result);
     } catch (err: any) {
         return res.status(500).json({error: "Internal server error"});
