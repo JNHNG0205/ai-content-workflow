@@ -14,13 +14,15 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique // stored lowercase
-  password  String
-  role      Role     @default(WRITER)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  sessions  Session[]
+  id           String    @id @default(cuid())
+  email        String    @unique // stored lowercase
+  password     String
+  role         Role      @default(WRITER)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  sessions     Session[]
+  authoredContent Content[] @relation("AuthorRelation")
+  reviewedContent Content[] @relation("ReviewerRelation")
 }
 
 model Session {
@@ -40,4 +42,22 @@ enum Role {
   ADMIN
 }
 
+model Content {
+  id         String   @id @default(cuid())
+  title      String
+  body       String
+  status     Status   @default(DRAFT)
+  author     User     @relation("AuthorRelation", fields: [authorId], references: [id])
+  authorId   String 
+  reviewer   User?    @relation("ReviewerRelation", fields: [reviewerId], references: [id])
+  reviewerId String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
 
+enum Status {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
