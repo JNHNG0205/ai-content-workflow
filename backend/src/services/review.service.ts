@@ -31,7 +31,9 @@ export async function approveContent(contentId: string, reviewerId: string) {
         where: {
             id: contentId,
             status: Status.SUBMITTED, // Only approve content that is submitted
-            reviewerId,
+            reviewerId: {
+                not: null, // Content must have a reviewer
+            },
             authorId: {
                 not: reviewerId,
             },
@@ -49,6 +51,9 @@ export async function rejectContent(contentId: string, reviewerId: string, comme
         where: {
             id: contentId,
             status: Status.SUBMITTED, // Only reject content that is submitted
+            reviewerId: {
+                not: null, // Content must have a reviewer
+            },
             authorId: {
                 not: reviewerId, // Reviewer cannot reject their own content
             },
