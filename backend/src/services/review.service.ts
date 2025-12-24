@@ -18,6 +18,9 @@ export async function reviewContent(contentId: string, reviewerId: string) {
         where: {
             id: contentId,
             status: Status.SUBMITTED, // Only review content that is submitted
+            authorId: {
+                not: reviewerId, // Reviewer cannot review their own content
+            },
         },
         data: {
             reviewerId,

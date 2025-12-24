@@ -26,6 +26,16 @@ export async function getMyDrafts(authorId: string) {
     return result;
 }
 
+export async function getContentById(contentId: string, authorId: string) {
+    const result = await prisma.content.findFirst({
+        where: {
+            id: contentId,
+            authorId, // Ensure user can only access their own content
+        },
+    });
+    return result;
+}
+
 export async function submitDraft(contentId: string, authorId: string)  {
     const result = await prisma.content.update({
         where: {

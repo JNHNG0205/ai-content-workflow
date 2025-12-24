@@ -28,6 +28,23 @@ export async function getMyDrafts(req: Request, res: Response) {
     }
 }
 
+export async function getContentById(req: Request, res: Response) {
+    try {
+        const { contentId } = req.params;
+        const authorId = req.user?.id;
+        if (!authorId) {
+            return res.status(401).json({ error: "Unauthorized" });
+        }
+        const result = await contentService.getContentById(contentId, authorId);
+        if (!result) {
+            return res.status(404).json({ error: "Content not found" });
+        }
+        return res.status(200).json(result);
+    } catch (err: any) {
+        return res.status(500).json({ error: "Internal server error" });
+    }
+}
+
 export async function submitDraft(req: Request, res: Response) {
     try {
         const { contentId } = req.params;

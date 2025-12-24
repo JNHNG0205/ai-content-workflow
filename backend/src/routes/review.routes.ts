@@ -5,10 +5,13 @@ import { Role } from "../generated/prisma";
 
 const router = Router();
 
-router.get('/', authMiddleware(Role.REVIEWER), reviewController.getPendingReviews);
-router.put('/:contentId/review', authMiddleware(Role.REVIEWER), reviewController.reviewContent);
-router.put('/:contentId/approve', authMiddleware(Role.REVIEWER), reviewController.approveContent);
-router.put('/:contentId/reject', authMiddleware(Role.REVIEWER), reviewController.rejectContent);
+// Get pending reviews (must be before /:contentId routes)
+router.get('/pending', authMiddleware(Role.REVIEWER), reviewController.getPendingReviews);
 router.get('/reviewed', authMiddleware(Role.REVIEWER), reviewController.getReviewedContent);
+
+// Review actions
+router.post('/:contentId/assign', authMiddleware(Role.REVIEWER), reviewController.reviewContent);
+router.post('/:contentId/approve', authMiddleware(Role.REVIEWER), reviewController.approveContent);
+router.post('/:contentId/reject', authMiddleware(Role.REVIEWER), reviewController.rejectContent);
 
 export default router;
