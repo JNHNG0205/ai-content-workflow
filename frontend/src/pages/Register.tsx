@@ -5,7 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
-export function Register() {
+interface RegisterProps {
+  onSwitchToLogin: () => void;
+}
+
+export function Register({ onSwitchToLogin }: RegisterProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('WRITER');
@@ -77,6 +81,15 @@ export function Register() {
               {loading ? 'Registering...' : 'Register'}
             </Button>
           </form>
+          <div className="mt-4 text-center text-sm">
+            <span className="text-gray-600">Already have an account? </span>
+            <button
+              onClick={onSwitchToLogin}
+              className="text-blue-600 hover:underline font-medium"
+            >
+              Login
+            </button>
+          </div>
         </CardContent>
       </Card>
     </div>

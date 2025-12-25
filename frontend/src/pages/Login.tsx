@@ -3,9 +3,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-export function Login() {
+interface LoginProps {
+  onSwitchToRegister: () => void;
+}
+
+export function Login({ onSwitchToRegister }: LoginProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -29,7 +33,6 @@ export function Login() {
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Login</CardTitle>
-          <CardDescription>Enter your credentials to access your account</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -63,6 +66,15 @@ export function Login() {
               {loading ? 'Logging in...' : 'Login'}
             </Button>
           </form>
+          <div className="mt-4 text-center text-sm">
+            <span className="text-gray-600">Don't have an account? </span>
+            <button
+              onClick={onSwitchToRegister}
+              className="text-blue-600 hover:underline font-medium"
+            >
+              Register
+            </button>
+          </div>
         </CardContent>
       </Card>
     </div>
