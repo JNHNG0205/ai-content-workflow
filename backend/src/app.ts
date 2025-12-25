@@ -6,6 +6,7 @@ import router from "./routes";
 import contentRoutes from "./routes/content.routes";
 import reviewRoutes from "./routes/review.routes";
 import authRoutes from "./routes/auth.routes";
+import aiRoutes from "./routes/ai.routes";
 
 export const app = express();
 
@@ -17,3 +18,4 @@ app.use(router);
 app.use('/api/auth', authRoutes);
 app.use('/api/content', contentRoutes);
 app.use('/api/review', reviewRoutes);
+app.use('/api/ai', aiRoutes);
