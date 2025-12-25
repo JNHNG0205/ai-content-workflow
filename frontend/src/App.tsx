@@ -1,35 +1,63 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { Login } from './pages/Login';
+import { Register } from './pages/Register';
+import { WriterDashboard } from './pages/WriterDashboard';
+import { ReviewerDashboard } from './pages/ReviewerDashboard';
+import { useState } from 'react';
 
-function App() {
-  const [count, setCount] = useState(0)
+function AppContent() {
+  const { user, loading } = useAuth();
+  const [showRegister, setShowRegister] = useState(false);
 
-  return (
-    <>
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div>Loading...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return showRegister ? (
       <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+        <Register />
+        <div className="text-center mt-4">
+          <button
+            onClick={() => setShowRegister(false)}
+            className="text-blue-600 hover:underline"
+          >
+            Already have an account? Login
+          </button>
+        </div>
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
+    ) : (
+      <div>
+        <Login />
+        <div className="text-center mt-4">
+          <button
+            onClick={() => setShowRegister(true)}
+            className="text-blue-600 hover:underline"
+          >
+            Don't have an account? Register
+          </button>
+        </div>
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    );
+  }
+
+  if (user.role === 'REVIEWER' || user.role === 'ADMIN') {
+    return <ReviewerDashboard />;
+  }
+
+  return <WriterDashboard />;
 }
 
-export default App
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  );
+}
+
+export default App;
