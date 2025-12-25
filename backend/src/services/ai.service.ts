@@ -26,8 +26,9 @@ export async function generateContent(prompt: string) {
             const text = (response as any).text || (response as any).content || JSON.stringify(response);
             return text;
         }
-        
+
         return String(response);
+        
     } catch (error: any) {
         console.error("AI Service Error:", error);
         throw new Error(`Failed to generate content: ${error.message}`);

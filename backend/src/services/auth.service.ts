@@ -60,3 +60,22 @@ export async function login(email: string, password: string) {
     }, 
   };
 };
+
+export async function getCurrentUser(sessionId: string) {
+  const session = await redis.get(`session:${sessionId}`);
+  if (!session) {
+    throw new Error("Invalid session");
+  }
+
+  const payload: { userId: string; role: Role } = JSON.parse(session);
+  const user = await prisma.user.findUnique({
+    where: { id: payload.userId },
+    select: { id: true, email: true, role: true },
+  });
+
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  return user;
+}

@@ -28,6 +28,7 @@ export function WriterDashboard() {
   const [body, setBody] = useState('');
   const [aiPrompt, setAiPrompt] = useState('');
   const [generating, setGenerating] = useState(false);
+  const [generatedContent, setGeneratedContent] = useState<string | null>(null);
 
   useEffect(() => {
     loadContent();
@@ -73,9 +74,26 @@ export function WriterDashboard() {
     setGenerating(true);
     const res = await api.generateContent(aiPrompt);
     if (res.data) {
-      setBody(res.data.content);
+      setGeneratedContent(res.data.content);
     }
     setGenerating(false);
+  };
+
+  const handleKeepGenerated = () => {
+    if (generatedContent) {
+      setBody(generatedContent);
+      setGeneratedContent(null);
+    }
+  };
+
+  const handleRegenerate = () => {
+    if (aiPrompt) {
+      handleGenerate();
+    }
+  };
+
+  const handleDiscardGenerated = () => {
+    setGeneratedContent(null);
   };
 
   const handleSubmit = async (id: string) => {
@@ -152,12 +170,39 @@ export function WriterDashboard() {
                     placeholder="Enter prompt for AI generation..."
                     value={aiPrompt}
                     onChange={(e) => setAiPrompt(e.target.value)}
+                    disabled={generating}
                   />
-                  <Button onClick={handleGenerate} disabled={generating}>
+                  <Button onClick={handleGenerate} disabled={generating || !aiPrompt}>
                     {generating ? 'Generating...' : 'Generate'}
                   </Button>
                 </div>
               </div>
+
+              {generatedContent && (
+                <Card className="border-blue-200 bg-blue-50">
+                  <CardHeader>
+                    <CardTitle className="text-lg">Generated Content Preview</CardTitle>
+                    <CardDescription>Review the AI-generated content before adding it to your draft</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="p-4 bg-white rounded-md border border-blue-200">
+                      <p className="text-sm text-gray-700 whitespace-pre-wrap">{generatedContent}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button onClick={handleKeepGenerated} variant="default">
+                        Keep
+                      </Button>
+                      <Button onClick={handleRegenerate} variant="outline" disabled={generating}>
+                        {generating ? 'Regenerating...' : 'Regenerate'}
+                      </Button>
+                      <Button onClick={handleDiscardGenerated} variant="ghost">
+                        Discard
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               <div className="space-y-2">
                 <Label htmlFor="title">Title</Label>
                 <Input
@@ -172,7 +217,13 @@ export function WriterDashboard() {
                 <Textarea
                   id="body"
                   value={body}
-                  onChange={(e) => setBody(e.target.value)}
+                  onChange={(e) => {
+                    setBody(e.target.value);
+                    // Clear generated content preview if user manually edits
+                    if (generatedContent) {
+                      setGeneratedContent(null);
+                    }
+                  }}
                   placeholder="Content body"
                   rows={10}
                 />

@@ -24,12 +24,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const storedSessionId = api.getSessionId();
-    if (storedSessionId) {
-      setSessionId(storedSessionId);
-      // In a real app, you'd fetch user data here
-    }
-    setLoading(false);
+    const restoreSession = async () => {
+      const storedSessionId = api.getSessionId();
+      if (storedSessionId) {
+        setSessionId(storedSessionId);
+        // Fetch user data from session
+        try {
+          const response = await api.getCurrentUser();
+          if (response.data) {
+            const userRole = response.data.role as 'WRITER' | 'REVIEWER' | 'ADMIN';
+            setUser({
+              ...response.data,
+              role: userRole,
+            });
+          } else {
+            // Session invalid, clear it
+            api.logout();
+            setSessionId(null);
+          }
+        } catch (error) {
+          // Session invalid, clear it
+          api.logout();
+          setSessionId(null);
+        }
+      }
+      setLoading(false);
+    };
+    restoreSession();
   }, []);
 
   const login = async (email: string, password: string) => {

@@ -81,6 +81,10 @@ class ApiClient {
     this.setSessionId(null);
   }
 
+  async getCurrentUser() {
+    return this.request<{ id: string; email: string; role: string }>('/auth/me');
+  }
+
   // Content
   async createDraft(title: string, body: string) {
     return this.request('/content', {

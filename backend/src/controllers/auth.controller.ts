@@ -38,3 +38,16 @@ export async function login(req: Request, res:Response) {
         return res.status(401).json({error: "Invalid credentials"});
     }
 }
+
+export async function getCurrentUser(req: Request, res: Response) {
+    try {
+        const sessionId = req.headers["x-session-id"];
+        if (!sessionId || typeof sessionId !== "string") {
+            return res.status(401).json({ error: "Unauthorized" });
+        }
+        const user = await authService.getCurrentUser(sessionId);
+        return res.status(200).json(user);
+    } catch (err: any) {
+        return res.status(401).json({ error: "Unauthorized" });
+    }
+}
