@@ -6,10 +6,7 @@ export interface ApiResponse<T> {
 }
 
 class ApiClient {
-  private sessionId: string | null = null;
-
   setSessionId(sessionId: string | null) {
-    this.sessionId = sessionId;
     if (sessionId) {
       localStorage.setItem('sessionId', sessionId);
     } else {
@@ -18,10 +15,9 @@ class ApiClient {
   }
 
   getSessionId(): string | null {
-    if (!this.sessionId) {
-      this.sessionId = localStorage.getItem('sessionId');
-    }
-    return this.sessionId;
+    // Always check localStorage to ensure we have the latest value
+    // This is important for session persistence across tabs
+    return localStorage.getItem('sessionId');
   }
 
   private async request<T>(

@@ -25,27 +25,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const restoreSession = async () => {
-      const storedSessionId = api.getSessionId();
+      const storedSessionId = localStorage.getItem('sessionId');
       if (storedSessionId) {
         setSessionId(storedSessionId);
         // Fetch user data from session
-        try {
-          const response = await api.getCurrentUser();
-          if (response.data) {
-            const userRole = response.data.role as 'WRITER' | 'REVIEWER' | 'ADMIN';
-            setUser({
-              ...response.data,
-              role: userRole,
-            });
-          } else {
-            // Session invalid, clear it
-            api.logout();
-            setSessionId(null);
-          }
-        } catch (error) {
+        const response = await api.getCurrentUser();
+        if (response.data) {
+          const userRole = response.data.role as 'WRITER' | 'REVIEWER' | 'ADMIN';
+          setUser({
+            ...response.data,
+            role: userRole,
+          });
+        } else {
           // Session invalid, clear it
           api.logout();
           setSessionId(null);
+          setUser(null);
         }
       }
       setLoading(false);
