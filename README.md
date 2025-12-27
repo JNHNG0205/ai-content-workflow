@@ -1,16 +1,44 @@
 # AI Content Workflow
 
-A full-stack content management system with AI-powered content generation, review workflow, and role-based access control. Writers can create, edit, and submit content for review, while reviewers can approve or reject submissions with feedback.
+A full-stack content management system with AI-powered content generation and refinement, review workflow, and role-based access control. Writers can create, edit, and submit content for review, while reviewers can approve or reject submissions with feedback.
 
 ## 🚀 Features
 
-- **AI-Powered Content Generation**: Generate content using Google Gemini AI
-- **Content Workflow**: Draft → Submit → Review → Approve/Reject workflow
+### Content Management
+
+- **AI-Powered Content Generation**: Generate social media posts using Google Gemini AI
+- **AI Content Refinement**: Refine existing content with AI, with optional custom instructions
+- **Content Workflow**: Complete Draft → Submit → Review → Approve/Reject workflow
+- **Content Status Tracking**: View drafts, submitted, rejected, and approved content
+- **Content Editing**: Update drafts and revert rejected content back to draft status
+
+### AI Capabilities
+
+- **Smart Content Generation**: Generate engaging social media posts with emojis
+- **Content Refinement**: Improve existing content with AI-powered suggestions
+- **Custom AI Persona**: Professional social media marketing expert persona
+- **Instruction-Based Refinement**: Provide specific instructions for content refinement
+
+### User Management
+
 - **Role-Based Access Control**: Three roles (WRITER, REVIEWER, ADMIN)
-- **Session Management**: Secure authentication with Redis-backed sessions
-- **Review System**: Reviewers can assign themselves, approve, or reject content with comments
-- **Content Management**: Writers can view drafts, submitted, rejected, and approved content
-- **RESTful API**: Well-structured REST API for frontend integration
+- **Secure Authentication**: Session-based authentication with Redis-backed sessions
+- **Session Persistence**: Automatic session restoration on page refresh
+
+### Review System
+
+- **Self-Assignment**: Reviewers can assign themselves to review content
+- **Approval/Rejection**: Reviewers can approve or reject content with feedback
+- **Review Comments**: Detailed feedback for rejected content
+- **Review History**: Track reviewed content
+
+### Frontend Features
+
+- **Modern UI**: Built with shadcn/ui components and Tailwind CSS
+- **React Query**: Efficient data fetching and caching with TanStack Query
+- **Client-Side Routing**: React Router for seamless navigation
+- **Responsive Design**: Mobile-friendly interface
+- **Real-Time Updates**: Automatic cache invalidation and data synchronization
 
 ## 🛠️ Tech Stack
 
@@ -20,13 +48,19 @@ A full-stack content management system with AI-powered content generation, revie
 - **Framework**: Express.js 5
 - **Database**: PostgreSQL with Prisma ORM
 - **Cache/Sessions**: Redis (ioredis)
-- **AI**: Google Gemini AI (@google/genai)
+- **AI Service**: Google Gemini AI (@google/genai)
 - **Authentication**: Session-based with bcrypt password hashing
+- **API**: RESTful API design
 
 ### Frontend
 
 - **Framework**: React 19 with TypeScript
 - **Build Tool**: Vite
+- **State Management**: TanStack Query (React Query) for server state
+- **Routing**: React Router DOM
+- **UI Components**: shadcn/ui
+- **Styling**: Tailwind CSS with PostCSS
+- **Utilities**: clsx, tailwind-merge
 - **Linting**: ESLint
 
 ## 📁 Project Structure
@@ -36,20 +70,26 @@ ai-content-workflow/
 ├── backend/
 │   ├── src/
 │   │   ├── controllers/     # Request handlers
-│   │   ├── services/        # Business logic
+│   │   ├── services/        # Business logic (auth, content, review, AI)
 │   │   ├── routes/          # API routes
 │   │   ├── middlewares/     # Auth middleware
-│   │   ├── config/          # Configuration files
+│   │   ├── config/          # Configuration files (env, prisma, redis)
 │   │   ├── utils/           # Utility functions
-│   │   └── types/           # TypeScript types
+│   │   ├── types/           # TypeScript types
+│   │   └── generated/       # Generated Prisma client
 │   ├── prisma/
 │   │   ├── schema.prisma    # Database schema
-│   │   └── migrations/     # Database migrations
+│   │   └── migrations/      # Database migrations
 │   └── package.json
 ├── frontend/
 │   ├── src/
-│   │   ├── App.tsx
-│   │   └── ...
+│   │   ├── components/      # shadcn/ui components
+│   │   ├── contexts/        # React contexts (AuthContext)
+│   │   ├── hooks/           # Custom hooks (useContent, useReview, useAI)
+│   │   ├── lib/             # Utilities (api, queryClient, utils)
+│   │   ├── pages/           # Page components
+│   │   ├── App.tsx          # Main app with routing
+│   │   └── main.tsx         # Entry point
 │   └── package.json
 └── README.md
 ```
@@ -58,10 +98,10 @@ ai-content-workflow/
 
 ### Prerequisites
 
-- Node.js (v18 or higher)
-- PostgreSQL database
-- Redis server
-- Google Gemini API key
+- **Node.js** (v18 or higher)
+- **PostgreSQL** database
+- **Redis** server
+- **Google Gemini API key** ([Get one here](https://ai.google.dev/))
 
 ### Installation
 
@@ -72,20 +112,15 @@ ai-content-workflow/
    cd ai-content-workflow
    ```
 
-2. **Install root dependencies**
-
-   ```bash
-   npm install
-   ```
-
-3. **Install backend dependencies**
+2. **Install backend dependencies**
 
    ```bash
    cd backend
    npm install
    ```
 
-4. **Install frontend dependencies**
+3. **Install frontend dependencies**
+
    ```bash
    cd ../frontend
    npm install
@@ -107,6 +142,9 @@ REDIS_URL="redis://localhost:6379"
 
 # AI Service
 GEMINI_API_KEY="your_gemini_api_key_here"
+
+# Optional: Custom AI Character/Persona
+# AI_CHARACTER="You are a professional social media marketing expert..."
 ```
 
 ### Database Setup
@@ -124,9 +162,16 @@ GEMINI_API_KEY="your_gemini_api_key_here"
    npx prisma migrate dev
    ```
 
-3. **Generate Prisma client**
+   This will:
+
+   - Create the database schema
+   - Generate the Prisma client
+   - Run all migrations
+
+3. **Optional: View database with Prisma Studio**
+
    ```bash
-   npx prisma generate
+   npx prisma studio
    ```
 
 ### Running the Application
@@ -135,6 +180,12 @@ GEMINI_API_KEY="your_gemini_api_key_here"
 
    ```bash
    redis-server
+   ```
+
+   Or use Docker:
+
+   ```bash
+   docker run -d -p 6379:6379 redis
    ```
 
 2. **Start the backend**
@@ -147,15 +198,27 @@ GEMINI_API_KEY="your_gemini_api_key_here"
    Backend will run on `http://localhost:4000`
 
 3. **Start the frontend** (in a new terminal)
+
    ```bash
    cd frontend
    npm run dev
    ```
+
    Frontend will run on `http://localhost:5173` (default Vite port)
+
+4. **Access the application**
+
+   Open `http://localhost:5173` in your browser
 
 ## 📚 API Documentation
 
+### Base URL
+
+All API endpoints are prefixed with `/api`
+
 ### Authentication
+
+All authenticated endpoints require the `x-session-id` header with a valid session ID.
 
 #### Register
 
@@ -166,7 +229,7 @@ Content-Type: application/json
 {
   "email": "user@example.com",
   "password": "password123",
-  "role": "WRITER" // Optional: WRITER, REVIEWER, ADMIN
+  "role": "WRITER"  // Optional: WRITER, REVIEWER, ADMIN (default: WRITER)
 }
 ```
 
@@ -183,11 +246,20 @@ Content-Type: application/json
 
 Response: {
   "sessionId": "uuid",
-  "user": { "id": "...", "email": "...", "role": "..." }
+  "user": {
+    "id": "user_id",
+    "email": "user@example.com",
+    "role": "WRITER"
+  }
 }
 ```
 
-**Note**: Use the `sessionId` in the `x-session-id` header for authenticated requests.
+#### Get Current User
+
+```http
+GET /api/auth/me
+x-session-id: <session-id>
+```
 
 ### Content Routes (WRITER role required)
 
@@ -300,71 +372,145 @@ x-session-id: <session-id>
 
 #### Generate Content
 
+Generate a new social media post from a prompt.
+
 ```http
 POST /api/ai/generate
 x-session-id: <session-id>
 Content-Type: application/json
 
 {
-  "prompt": "Write a blog post about TypeScript"
+  "prompt": "Write a social media post about TypeScript"
 }
 
 Response: {
-  "content": "Generated content here..."
+  "content": "🚀 Just discovered TypeScript and I'm in love! 💙\n\nTypeScript brings type safety to JavaScript..."
 }
 ```
 
+**Note**: The AI returns only the post text with emojis, formatted like a typical social media post.
+
+#### Refine Content
+
+Refine and improve existing content with optional custom instructions.
+
+```http
+POST /api/ai/refine
+x-session-id: <session-id>
+Content-Type: application/json
+
+{
+  "content": "Current post content here...",
+  "instruction": "Make it more engaging and add emojis"  // Optional
+}
+
+Response: {
+  "content": "✨ Refined post content with improvements... 🎉"
+}
+```
+
+**Note**:
+
+- The `content` field is required and must not be empty
+- The `instruction` field is optional - provides specific refinement guidance
+- Returns only the refined post text, no explanations
+
 ## 🔄 Content Workflow
 
-1. **DRAFT**: Writer creates content
+### Status Flow
+
+```
+DRAFT → SUBMITTED → APPROVED
+              ↓
+          REJECTED → DRAFT (after revert)
+```
+
+### Detailed Workflow
+
+1. **DRAFT** - Writer creates content
 
    - Writer can create, update, and view drafts
+   - Writer can use AI to generate or refine content
    - Writer can submit draft for review
 
-2. **SUBMITTED**: Content is submitted for review
+2. **SUBMITTED** - Content is submitted for review
 
-   - Reviewer can view pending submissions
+   - Content appears in reviewer's pending list
    - Reviewer can assign themselves to review
-   - Reviewer can approve or reject
+   - Reviewer can approve or reject with comments
 
-3. **APPROVED**: Content is approved
+3. **APPROVED** - Content is approved
 
    - Content is finalized
    - Writer can view approved content
+   - Content cannot be edited
 
-4. **REJECTED**: Content is rejected
+4. **REJECTED** - Content is rejected
    - Reviewer provides feedback comment
    - Writer can view rejection comment
    - Writer can revert to DRAFT for editing
+   - After revert, writer can update and resubmit
 
 ## 👥 User Roles
 
-- **WRITER**: Can create, edit, submit, and view their own content
-- **REVIEWER**: Can view pending reviews, assign themselves, approve/reject content
-- **ADMIN**: Full access (can be extended)
+### WRITER
+
+- Create, edit, and manage drafts
+- Generate content with AI
+- Refine content with AI
+- Submit content for review
+- View submitted, rejected, and approved content
+- Revert rejected content to draft
+
+### REVIEWER
+
+- View pending content submissions
+- Assign themselves to review content
+- Approve or reject content
+- Provide feedback comments when rejecting
+- View review history
+
+### ADMIN
+
+- Full access (can be extended with additional permissions)
+
+## 🎨 Frontend Features
+
+### Writer Dashboard
+
+- **Create Tab**: Create new content with AI generation
+- **Drafts Tab**: View and manage all drafts
+- **Submitted Tab**: Track submitted content
+- **Rejected Tab**: View rejected content with feedback
+- **Approved Tab**: View approved content
+- **AI Features**:
+  - Generate content from prompts
+  - Preview generated content before keeping
+  - Refine existing content with optional instructions
+  - Preview refined content before applying
+
+### Reviewer Dashboard
+
+- **Pending Reviews Tab**: View content awaiting review
+- **Reviewed Tab**: View review history
+- **Review Actions**:
+  - Assign yourself to review
+  - Approve content
+  - Reject with detailed comments
 
 ## 🧪 Testing
-
-### Test AI Service
-
-```bash
-cd backend
-npm run test
-```
-
-Or manually:
-
-```bash
-cd backend
-npx ts-node src/test-ai.ts
-```
 
 ### Test API Endpoints
 
 Example with curl:
 
 ```bash
-# Login
+# Register a user
+curl -X POST http://localhost:4000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"writer@example.com","password":"password123","role":"WRITER"}'
+
+# Login and get session ID
 SESSION_ID=$(curl -s -X POST http://localhost:4000/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"writer@example.com","password":"password123"}' | jq -r '.sessionId')
@@ -373,7 +519,19 @@ SESSION_ID=$(curl -s -X POST http://localhost:4000/api/auth/login \
 curl -X POST http://localhost:4000/api/content \
   -H "x-session-id: $SESSION_ID" \
   -H "Content-Type: application/json" \
-  -d '{"title":"Test","body":"Content"}'
+  -d '{"title":"Test Post","body":"This is a test post"}'
+
+# Generate AI content
+curl -X POST http://localhost:4000/api/ai/generate \
+  -H "x-session-id: $SESSION_ID" \
+  -H "Content-Type: application/json" \
+  -d '{"prompt":"Write a post about AI"}'
+
+# Refine content
+curl -X POST http://localhost:4000/api/ai/refine \
+  -H "x-session-id: $SESSION_ID" \
+  -H "Content-Type: application/json" \
+  -d '{"content":"Original post text","instruction":"Make it more engaging"}'
 ```
 
 ## 🛠️ Development
@@ -381,6 +539,8 @@ curl -X POST http://localhost:4000/api/content \
 ### Backend Scripts
 
 ```bash
+cd backend
+
 npm run dev      # Start development server with hot reload
 npm run build    # Build for production
 npm run start    # Start production server
@@ -390,6 +550,8 @@ npm run test     # Test AI service
 ### Frontend Scripts
 
 ```bash
+cd frontend
+
 npm run dev      # Start development server
 npm run build    # Build for production
 npm run preview  # Preview production build
@@ -399,31 +561,86 @@ npm run lint     # Run ESLint
 ### Database Management
 
 ```bash
-# Create migration
+cd backend
+
+# Create a new migration
 npx prisma migrate dev --name migration_name
 
-# Reset database
+# Reset database (⚠️ deletes all data)
 npx prisma migrate reset
 
-# View database
+# View database in browser
 npx prisma studio
+
+# Generate Prisma client
+npx prisma generate
 ```
+
+## ⚙️ Configuration
+
+### AI Character/Persona
+
+The AI uses a default persona as a professional social media marketing expert. You can customize this by setting the `AI_CHARACTER` environment variable:
+
+```env
+AI_CHARACTER="You are a professional social media marketing expert specializing in B2B content, with expertise in LinkedIn and Twitter. Your writing style is data-driven and authoritative."
+```
+
+### Session Configuration
+
+- Sessions are stored in Redis
+- Default expiration: 24 hours
+- Session ID is stored in browser localStorage on the frontend
 
 ## 📝 Notes
 
-- Sessions are stored in Redis and expire after 24 hours
-- Passwords are hashed using bcrypt
-- Content status transitions are validated to prevent invalid state changes
-- Reviewers cannot review their own content
-- All API endpoints require authentication except `/api/auth/*`
+- **Sessions**: Stored in Redis, expire after 24 hours
+- **Passwords**: Hashed using bcrypt with salt rounds
+- **Content Status**: Transitions are validated to prevent invalid state changes
+- **Self-Review Prevention**: Reviewers cannot review their own content
+- **Authentication**: All API endpoints require authentication except `/api/auth/*`
+- **AI Output**: Returns only post text with emojis, no explanations or meta-commentary
+- **Data Fetching**: Frontend uses TanStack Query for efficient caching and automatic refetching
 
 ## 🔒 Security
 
-- Password hashing with bcrypt
-- Session-based authentication
-- Role-based access control
-- Input validation on all endpoints
-- SQL injection protection via Prisma ORM
+- **Password Hashing**: bcrypt with salt rounds
+- **Session-Based Auth**: Secure session management with Redis
+- **Role-Based Access Control**: Endpoints protected by role middleware
+- **Input Validation**: All endpoints validate input data
+- **SQL Injection Protection**: Prisma ORM prevents SQL injection
+- **CORS**: Configured for secure cross-origin requests
+
+## 🚀 Deployment
+
+### Backend Deployment
+
+1. Build the backend:
+
+   ```bash
+   cd backend
+   npm run build
+   ```
+
+2. Set environment variables on your hosting platform
+
+3. Start the server:
+   ```bash
+   npm start
+   ```
+
+### Frontend Deployment
+
+1. Build the frontend:
+
+   ```bash
+   cd frontend
+   npm run build
+   ```
+
+2. Deploy the `dist` folder to your hosting service (Vercel, Netlify, etc.)
+
+3. Set `VITE_API_URL` environment variable to your backend URL
 
 ## 📄 License
 
@@ -432,10 +649,18 @@ ISC
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 🙏 Acknowledgments
+
+- [Google Gemini AI](https://ai.google.dev/) for AI capabilities
+- [Prisma](https://www.prisma.io/) for database ORM
+- [shadcn/ui](https://ui.shadcn.com/) for UI components
+- [TanStack Query](https://tanstack.com/query) for data fetching
 
 ---
 
-Built with ❤️ using TypeScript, Express, React, and Prisma
+Built with ❤️ using TypeScript, Express, React, Prisma, and Google Gemini AI
