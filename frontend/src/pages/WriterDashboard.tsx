@@ -132,11 +132,11 @@ export function WriterDashboard() {
   };
 
   const tabs = [
+    { id: 'create', label: 'Create' },
     { id: 'drafts', label: 'Drafts' },
     { id: 'submitted', label: 'Submitted' },
     { id: 'rejected', label: 'Rejected' },
     { id: 'approved', label: 'Approved' },
-    { id: 'create', label: 'Create' },
   ];
 
   const isLoading = 
