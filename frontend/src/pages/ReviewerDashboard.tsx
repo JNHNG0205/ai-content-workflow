@@ -1,10 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import {
+  usePendingReviews,
+  useReviewed,
+  useAssignReviewer,
+  useApproveContent,
+  useRejectContent,
+} from '@/hooks/useReview';
 
 interface Content {
   id: string;
@@ -19,43 +25,32 @@ interface Content {
 export function ReviewerDashboard() {
   const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<'pending' | 'reviewed'>('pending');
-  const [pending, setPending] = useState<Content[]>([]);
-  const [reviewed, setReviewed] = useState<Content[]>([]);
-  const [loading, setLoading] = useState(false);
   const [rejectComment, setRejectComment] = useState('');
   const [selectedContent, setSelectedContent] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadContent();
-  }, [activeTab]);
+  // React Query hooks
+  const { data: pending = [], isLoading: pendingLoading } = usePendingReviews();
+  const { data: reviewed = [], isLoading: reviewedLoading } = useReviewed();
 
-  const loadContent = async () => {
-    setLoading(true);
-    try {
-      if (activeTab === 'pending') {
-        const res = await api.getPendingReviews();
-        if (res.data) setPending(res.data);
-      } else {
-        const res = await api.getReviewed();
-        if (res.data) setReviewed(res.data);
-      }
-    } catch (error) {
-      console.error('Failed to load content:', error);
-    }
-    setLoading(false);
-  };
+  const assignReviewer = useAssignReviewer();
+  const approveContent = useApproveContent();
+  const rejectContent = useRejectContent();
 
   const handleAssign = async (id: string) => {
-    setLoading(true);
-    await api.assignReviewer(id);
-    loadContent();
+    try {
+      await assignReviewer.mutateAsync(id);
+    } catch (error) {
+      console.error('Failed to assign reviewer:', error);
+    }
   };
 
   const handleApprove = async (id: string) => {
-    setLoading(true);
-    await api.approveContent(id);
-    setActiveTab('reviewed');
-    loadContent();
+    try {
+      await approveContent.mutateAsync(id);
+      setActiveTab('reviewed');
+    } catch (error) {
+      console.error('Failed to approve content:', error);
+    }
   };
 
   const handleReject = async (id: string) => {
@@ -63,15 +58,19 @@ export function ReviewerDashboard() {
       alert('Please provide a rejection comment');
       return;
     }
-    setLoading(true);
-    await api.rejectContent(id, rejectComment);
-    setRejectComment('');
-    setSelectedContent(null);
-    setActiveTab('reviewed');
-    loadContent();
+    try {
+      await rejectContent.mutateAsync({ contentId: id, comment: rejectComment });
+      setRejectComment('');
+      setSelectedContent(null);
+      setActiveTab('reviewed');
+    } catch (error) {
+      console.error('Failed to reject content:', error);
+    }
   };
 
+  const isLoading = activeTab === 'pending' ? pendingLoading : reviewedLoading;
   const currentContent = activeTab === 'pending' ? pending : reviewed;
+  const isMutating = assignReviewer.isPending || approveContent.isPending || rejectContent.isPending;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -113,7 +112,7 @@ export function ReviewerDashboard() {
           </button>
         </div>
 
-        {loading ? (
+        {isLoading ? (
           <div className="text-center py-8">Loading...</div>
         ) : currentContent.length === 0 ? (
           <Card>
@@ -136,16 +135,26 @@ export function ReviewerDashboard() {
                   {activeTab === 'pending' && (
                     <div className="space-y-4">
                       {!content.reviewerId && (
-                        <Button onClick={() => handleAssign(content.id)}>Assign to Me</Button>
+                        <Button 
+                          onClick={() => handleAssign(content.id)} 
+                          disabled={assignReviewer.isPending}
+                        >
+                          {assignReviewer.isPending ? 'Assigning...' : 'Assign to Me'}
+                        </Button>
                       )}
                       {content.reviewerId && (
                         <div className="flex gap-2">
-                          <Button onClick={() => handleApprove(content.id)} variant="default">
-                            Approve
+                          <Button 
+                            onClick={() => handleApprove(content.id)} 
+                            variant="default"
+                            disabled={approveContent.isPending || rejectContent.isPending}
+                          >
+                            {approveContent.isPending ? 'Approving...' : 'Approve'}
                           </Button>
                           <Button
                             onClick={() => setSelectedContent(selectedContent === content.id ? null : content.id)}
                             variant="destructive"
+                            disabled={approveContent.isPending || rejectContent.isPending}
                           >
                             Reject
                           </Button>
@@ -161,13 +170,21 @@ export function ReviewerDashboard() {
                             rows={3}
                           />
                           <div className="flex gap-2">
-                            <Button onClick={() => handleReject(content.id)} variant="destructive">
-                              Confirm Reject
+                            <Button 
+                              onClick={() => handleReject(content.id)} 
+                              variant="destructive"
+                              disabled={rejectContent.isPending}
+                            >
+                              {rejectContent.isPending ? 'Rejecting...' : 'Confirm Reject'}
                             </Button>
-                            <Button variant="outline" onClick={() => {
-                              setSelectedContent(null);
-                              setRejectComment('');
-                            }}>
+                            <Button 
+                              variant="outline" 
+                              onClick={() => {
+                                setSelectedContent(null);
+                                setRejectComment('');
+                              }}
+                              disabled={rejectContent.isPending}
+                            >
                               Cancel
                             </Button>
                           </div>

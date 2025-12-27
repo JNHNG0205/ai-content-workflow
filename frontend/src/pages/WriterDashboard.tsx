@@ -1,82 +1,68 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-
-interface Content {
-  id: string;
-  title: string;
-  body: string;
-  status: string;
-  rejectionComment?: string;
-  createdAt: string;
-}
+import {
+  useDrafts,
+  useSubmitted,
+  useRejected,
+  useApproved,
+  useCreateDraft,
+  useUpdateContent,
+  useSubmitDraft,
+  useRevertContent,
+  type Content,
+} from '@/hooks/useContent';
+import { useGenerateContent } from '@/hooks/useAI';
 
 export function WriterDashboard() {
   const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<'drafts' | 'submitted' | 'rejected' | 'approved' | 'create'>('drafts');
-  const [drafts, setDrafts] = useState<Content[]>([]);
-  const [submitted, setSubmitted] = useState<Content[]>([]);
-  const [rejected, setRejected] = useState<Content[]>([]);
-  const [approved, setApproved] = useState<Content[]>([]);
-  const [loading, setLoading] = useState(false);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [aiPrompt, setAiPrompt] = useState('');
-  const [generating, setGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState<string | null>(null);
+  const [editingContentId, setEditingContentId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editBody, setEditBody] = useState('');
 
-  useEffect(() => {
-    loadContent();
-  }, [activeTab]);
+  // React Query hooks
+  const { data: drafts = [], isLoading: draftsLoading } = useDrafts();
+  const { data: submitted = [], isLoading: submittedLoading } = useSubmitted();
+  const { data: rejected = [], isLoading: rejectedLoading } = useRejected();
+  const { data: approved = [], isLoading: approvedLoading } = useApproved();
 
-  const loadContent = async () => {
-    setLoading(true);
-    try {
-      if (activeTab === 'drafts') {
-        const res = await api.getDrafts();
-        if (res.data) setDrafts(res.data);
-      } else if (activeTab === 'submitted') {
-        const res = await api.getSubmitted();
-        if (res.data) setSubmitted(res.data);
-      } else if (activeTab === 'rejected') {
-        const res = await api.getRejected();
-        if (res.data) setRejected(res.data);
-      } else if (activeTab === 'approved') {
-        const res = await api.getApproved();
-        if (res.data) setApproved(res.data);
-      }
-    } catch (error) {
-      console.error('Failed to load content:', error);
-    }
-    setLoading(false);
-  };
+  const createDraft = useCreateDraft();
+  const updateContent = useUpdateContent();
+  const submitDraft = useSubmitDraft();
+  const revertContent = useRevertContent();
+  const generateContent = useGenerateContent();
 
   const handleCreate = async () => {
     if (!title || !body) return;
-    setLoading(true);
-    const res = await api.createDraft(title, body);
-    if (res.data) {
+    try {
+      await createDraft.mutateAsync({ title, body });
       setTitle('');
       setBody('');
+      setGeneratedContent(null);
+      setAiPrompt('');
       setActiveTab('drafts');
-      loadContent();
+    } catch (error) {
+      console.error('Failed to create draft:', error);
     }
-    setLoading(false);
   };
 
   const handleGenerate = async () => {
     if (!aiPrompt) return;
-    setGenerating(true);
-    const res = await api.generateContent(aiPrompt);
-    if (res.data) {
-      setGeneratedContent(res.data.content);
+    try {
+      const content = await generateContent.mutateAsync(aiPrompt);
+      setGeneratedContent(content);
+    } catch (error) {
+      console.error('Failed to generate content:', error);
     }
-    setGenerating(false);
   };
 
   const handleKeepGenerated = () => {
@@ -97,16 +83,52 @@ export function WriterDashboard() {
   };
 
   const handleSubmit = async (id: string) => {
-    setLoading(true);
-    await api.submitDraft(id);
-    loadContent();
+    try {
+      await submitDraft.mutateAsync(id);
+    } catch (error) {
+      console.error('Failed to submit draft:', error);
+    }
   };
 
   const handleRevert = async (id: string) => {
-    setLoading(true);
-    await api.revertContent(id);
-    setActiveTab('drafts');
-    loadContent();
+    try {
+      await revertContent.mutateAsync(id);
+      setActiveTab('drafts');
+    } catch (error) {
+      console.error('Failed to revert content:', error);
+    }
+  };
+
+  const handleEdit = (content: Content) => {
+    setEditingContentId(content.id);
+    setEditTitle(content.title);
+    setEditBody(content.body);
+    setActiveTab('create');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingContentId(null);
+    setEditTitle('');
+    setEditBody('');
+    setTitle('');
+    setBody('');
+    setGeneratedContent(null);
+    setAiPrompt('');
+  };
+
+  const handleUpdate = async () => {
+    if (!editingContentId || !editTitle || !editBody) return;
+    try {
+      await updateContent.mutateAsync({ contentId: editingContentId, title: editTitle, body: editBody });
+      setEditingContentId(null);
+      setEditTitle('');
+      setEditBody('');
+      setTitle('');
+      setBody('');
+      setActiveTab('drafts');
+    } catch (error) {
+      console.error('Failed to update content:', error);
+    }
   };
 
   const tabs = [
@@ -116,6 +138,12 @@ export function WriterDashboard() {
     { id: 'approved', label: 'Approved' },
     { id: 'create', label: 'Create' },
   ];
+
+  const isLoading = 
+    activeTab === 'drafts' ? draftsLoading :
+    activeTab === 'submitted' ? submittedLoading :
+    activeTab === 'rejected' ? rejectedLoading :
+    activeTab === 'approved' ? approvedLoading : false;
 
   const currentContent = 
     activeTab === 'drafts' ? drafts :
@@ -159,26 +187,30 @@ export function WriterDashboard() {
         {activeTab === 'create' && (
           <Card>
             <CardHeader>
-              <CardTitle>Create New Draft</CardTitle>
-              <CardDescription>Create content manually or use AI to generate</CardDescription>
+              <CardTitle>{editingContentId ? 'Edit Draft' : 'Create New Draft'}</CardTitle>
+              <CardDescription>
+                {editingContentId ? 'Update your draft content' : 'Create content manually or use AI to generate'}
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>AI Generation (Optional)</Label>
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Enter prompt for AI generation..."
-                    value={aiPrompt}
-                    onChange={(e) => setAiPrompt(e.target.value)}
-                    disabled={generating}
-                  />
-                  <Button onClick={handleGenerate} disabled={generating || !aiPrompt}>
-                    {generating ? 'Generating...' : 'Generate'}
-                  </Button>
+              {!editingContentId && (
+                <div className="space-y-2">
+                  <Label>AI Generation (Optional)</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Enter prompt for AI generation..."
+                      value={aiPrompt}
+                      onChange={(e) => setAiPrompt(e.target.value)}
+                      disabled={generateContent.isPending}
+                    />
+                    <Button onClick={handleGenerate} disabled={generateContent.isPending || !aiPrompt}>
+                      {generateContent.isPending ? 'Generating...' : 'Generate'}
+                    </Button>
+                  </div>
                 </div>
-              </div>
+              )}
 
-              {generatedContent && (
+              {!editingContentId && generatedContent && (
                 <Card className="border-blue-200 bg-blue-50">
                   <CardHeader>
                     <CardTitle className="text-lg">Generated Content Preview</CardTitle>
@@ -192,8 +224,8 @@ export function WriterDashboard() {
                       <Button onClick={handleKeepGenerated} variant="default">
                         Keep
                       </Button>
-                      <Button onClick={handleRegenerate} variant="outline" disabled={generating}>
-                        {generating ? 'Regenerating...' : 'Regenerate'}
+                      <Button onClick={handleRegenerate} variant="outline" disabled={generateContent.isPending}>
+                        {generateContent.isPending ? 'Regenerating...' : 'Regenerate'}
                       </Button>
                       <Button onClick={handleDiscardGenerated} variant="ghost">
                         Discard
@@ -207,8 +239,14 @@ export function WriterDashboard() {
                 <Label htmlFor="title">Title</Label>
                 <Input
                   id="title"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
+                  value={editingContentId ? editTitle : title}
+                  onChange={(e) => {
+                    if (editingContentId) {
+                      setEditTitle(e.target.value);
+                    } else {
+                      setTitle(e.target.value);
+                    }
+                  }}
                   placeholder="Content title"
                 />
               </div>
@@ -216,28 +254,45 @@ export function WriterDashboard() {
                 <Label htmlFor="body">Body</Label>
                 <Textarea
                   id="body"
-                  value={body}
+                  value={editingContentId ? editBody : body}
                   onChange={(e) => {
-                    setBody(e.target.value);
-                    // Clear generated content preview if user manually edits
-                    if (generatedContent) {
-                      setGeneratedContent(null);
+                    if (editingContentId) {
+                      setEditBody(e.target.value);
+                    } else {
+                      setBody(e.target.value);
+                      // Clear generated content preview if user manually edits
+                      if (generatedContent) {
+                        setGeneratedContent(null);
+                      }
                     }
                   }}
                   placeholder="Content body"
                   rows={10}
                 />
               </div>
-              <Button onClick={handleCreate} disabled={loading || !title || !body}>
-                Create Draft
-              </Button>
+              <div className="flex gap-2">
+                {editingContentId ? (
+                  <>
+                    <Button onClick={handleUpdate} disabled={updateContent.isPending || !editTitle || !editBody}>
+                      {updateContent.isPending ? 'Updating...' : 'Update Draft'}
+                    </Button>
+                    <Button onClick={handleCancelEdit} variant="outline" disabled={updateContent.isPending}>
+                      Cancel
+                    </Button>
+                  </>
+                ) : (
+                  <Button onClick={handleCreate} disabled={createDraft.isPending || !title || !body}>
+                    {createDraft.isPending ? 'Creating...' : 'Create Draft'}
+                  </Button>
+                )}
+              </div>
             </CardContent>
           </Card>
         )}
 
         {activeTab !== 'create' && (
           <div className="space-y-4">
-            {loading ? (
+            {isLoading ? (
               <div className="text-center py-8">Loading...</div>
             ) : currentContent.length === 0 ? (
               <Card>
@@ -264,7 +319,12 @@ export function WriterDashboard() {
                     )}
                     <div className="flex gap-2">
                       {content.status === 'DRAFT' && (
-                        <Button onClick={() => handleSubmit(content.id)}>Submit</Button>
+                        <>
+                          <Button onClick={() => handleEdit(content)} variant="outline">
+                            Edit
+                          </Button>
+                          <Button onClick={() => handleSubmit(content.id)}>Submit</Button>
+                        </>
                       )}
                       {content.status === 'REJECTED' && (
                         <Button onClick={() => handleRevert(content.id)}>Edit</Button>
