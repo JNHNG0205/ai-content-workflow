@@ -163,6 +163,13 @@ class ApiClient {
       body: JSON.stringify({ prompt }),
     });
   }
+
+  async refineContent(content: string, instruction?: string) {
+    return this.request<{ content: string }>('/ai/refine', {
+      method: 'POST',
+      body: JSON.stringify({ content, instruction }),
+    });
+  }
 }
 
 export const api = new ApiClient();

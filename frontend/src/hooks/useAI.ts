@@ -11,3 +11,13 @@ export function useGenerateContent() {
   });
 }
 
+export function useRefineContent() {
+  return useMutation({
+    mutationFn: async ({ content, instruction }: { content: string; instruction?: string }) => {
+      const res = await api.refineContent(content, instruction);
+      if (res.error) throw new Error(res.error);
+      return res.data?.content || '';
+    },
+  });
+}
+

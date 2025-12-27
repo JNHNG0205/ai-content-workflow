@@ -6,4 +6,5 @@ export const env = {
   DATABASE_URL: process.env.DATABASE_URL!,
   REDIS_URL: process.env.REDIS_URL!,
   GEMINI_API_KEY: process.env.GEMINI_API_KEY || "",
+  AI_CHARACTER: process.env.AI_CHARACTER || "",
 };

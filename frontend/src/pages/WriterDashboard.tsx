@@ -16,7 +16,7 @@ import {
   useRevertContent,
   type Content,
 } from '@/hooks/useContent';
-import { useGenerateContent } from '@/hooks/useAI';
+import { useGenerateContent, useRefineContent } from '@/hooks/useAI';
 
 export function WriterDashboard() {
   const { user, logout } = useAuth();
@@ -25,6 +25,8 @@ export function WriterDashboard() {
   const [body, setBody] = useState('');
   const [aiPrompt, setAiPrompt] = useState('');
   const [generatedContent, setGeneratedContent] = useState<string | null>(null);
+  const [refineInstruction, setRefineInstruction] = useState('');
+  const [refinedContent, setRefinedContent] = useState<string | null>(null);
   const [editingContentId, setEditingContentId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [editBody, setEditBody] = useState('');
@@ -40,6 +42,7 @@ export function WriterDashboard() {
   const submitDraft = useSubmitDraft();
   const revertContent = useRevertContent();
   const generateContent = useGenerateContent();
+  const refineContent = useRefineContent();
 
   const handleCreate = async () => {
     if (!title || !body) return;
@@ -80,6 +83,46 @@ export function WriterDashboard() {
 
   const handleDiscardGenerated = () => {
     setGeneratedContent(null);
+  };
+
+  const handleRefine = async () => {
+    const contentToRefine = editingContentId ? editBody : body;
+    if (!contentToRefine || contentToRefine.trim().length === 0) {
+      alert('Please add content to the body field before refining');
+      return;
+    }
+    try {
+      const refined = await refineContent.mutateAsync({ 
+        content: contentToRefine, 
+        instruction: refineInstruction || undefined 
+      });
+      setRefinedContent(refined);
+    } catch (error) {
+      console.error('Failed to refine content:', error);
+    }
+  };
+
+  const handleKeepRefined = () => {
+    if (refinedContent) {
+      if (editingContentId) {
+        setEditBody(refinedContent);
+      } else {
+        setBody(refinedContent);
+      }
+      setRefinedContent(null);
+      setRefineInstruction('');
+    }
+  };
+
+  const handleRegenerateRefined = () => {
+    if (editingContentId ? editBody : body) {
+      handleRefine();
+    }
+  };
+
+  const handleDiscardRefined = () => {
+    setRefinedContent(null);
+    setRefineInstruction('');
   };
 
   const handleSubmit = async (id: string) => {
@@ -251,25 +294,80 @@ export function WriterDashboard() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="body">Body</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="body">Body</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRefine}
+                    disabled={refineContent.isPending || !(editingContentId ? editBody : body) || ((editingContentId ? editBody : body)?.trim().length === 0)}
+                  >
+                    {refineContent.isPending ? 'Refining...' : 'Refine with AI'}
+                  </Button>
+                </div>
                 <Textarea
                   id="body"
                   value={editingContentId ? editBody : body}
                   onChange={(e) => {
                     if (editingContentId) {
                       setEditBody(e.target.value);
+                      // Clear refined content preview if user manually edits
+                      if (refinedContent) {
+                        setRefinedContent(null);
+                      }
                     } else {
                       setBody(e.target.value);
-                      // Clear generated content preview if user manually edits
+                      // Clear generated/refined content preview if user manually edits
                       if (generatedContent) {
                         setGeneratedContent(null);
+                      }
+                      if (refinedContent) {
+                        setRefinedContent(null);
                       }
                     }
                   }}
                   placeholder="Content body"
                   rows={10}
                 />
+                <div className="space-y-2">
+                  <Label htmlFor="refine-instruction" className="text-sm text-gray-500">
+                    Refinement Instruction (Optional)
+                  </Label>
+                  <Input
+                    id="refine-instruction"
+                    placeholder="e.g., Make it more engaging, add more details, improve clarity..."
+                    value={refineInstruction}
+                    onChange={(e) => setRefineInstruction(e.target.value)}
+                    disabled={refineContent.isPending}
+                  />
+                </div>
               </div>
+
+              {refinedContent && (
+                <Card className="border-green-200 bg-green-50">
+                  <CardHeader>
+                    <CardTitle className="text-lg">Refined Content Preview</CardTitle>
+                    <CardDescription>Review the AI-refined content before applying it to your draft</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="p-4 bg-white rounded-md border border-green-200">
+                      <p className="text-sm text-gray-700 whitespace-pre-wrap">{refinedContent}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button onClick={handleKeepRefined} variant="default">
+                        Keep Refined
+                      </Button>
+                      <Button onClick={handleRegenerateRefined} variant="outline" disabled={refineContent.isPending}>
+                        {refineContent.isPending ? 'Refining...' : 'Refine Again'}
+                      </Button>
+                      <Button onClick={handleDiscardRefined} variant="ghost">
+                        Discard
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
               <div className="flex gap-2">
                 {editingContentId ? (
                   <>
